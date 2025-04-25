@@ -19,11 +19,7 @@ const getStatusBgColor = (status: LetterStatus | undefined): string => {
   }
 };
 
-export default function LineContainer({
-  guess,
-  statuses,
-  isActive,
-}: LineProps) {
+export default function Line({ guess, statuses, isActive }: LineProps) {
   return (
     <div className="flex gap-2">
       {Array.from({ length: 5 }).map((_, index) => {

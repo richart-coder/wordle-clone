@@ -1,5 +1,5 @@
 "use client";
-import LineContainer from "./LineContainer";
+import Line from "./Line";
 import { toast } from "react-toastify";
 import { useEffect, useReducer, useState, useRef } from "react";
 
@@ -84,7 +84,7 @@ export default function WordleGame() {
           const previousGuessResult = guessResults[index];
 
           return (
-            <LineContainer
+            <Line
               key={index}
               guess={
                 isCurrentRow ? guess.value : previousGuessResult?.value ?? ""
@@ -98,11 +98,6 @@ export default function WordleGame() {
             />
           );
         })}
-      </div>
-
-      <div className="text-sm text-gray-500">
-        Debug - Current guess state: "{guess.value}" | Word: "{word}" | Status:{" "}
-        {gameStatus}
       </div>
     </div>
   );
