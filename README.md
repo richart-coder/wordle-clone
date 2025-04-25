@@ -1,4 +1,4 @@
-# Wordle Clone (繁體中文版)
+# Wordle Clone
 
 一個使用現代網頁技術構建的熱門猜詞遊戲 Wordle 的簡易複刻版。
 
@@ -79,15 +79,15 @@ yarn dev
 |-- public/
 |-- src/
 |   |-- app/
-|   |   |-- api/             # API 路由 (例如：用於單詞)
+|   |   |-- api/
 |   |   |   `-- words/
 |   |   |       `-- route.ts
-|   |   |-- layout.tsx       # 主要佈局 (包含 ToastContainer)
-|   |   `-- page.tsx         # 主要頁面元件
+|   |   |-- layout.tsx
+|   |   `-- page.tsx
 |   |-- components/
-|   |   |-- LineContainer.tsx # 渲染單行的字母方塊
-|   |   `-- Wordle.tsx        # 主要遊戲邏輯與狀態管理
-|   `-- globals.css        # 全局樣式
+|   |   |-- LineContainer.tsx
+|   |   `-- Wordle.tsx
+|   `-- globals.css
 |-- package.json
 |-- tailwind.config.ts
 `-- README.md
