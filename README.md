@@ -85,7 +85,7 @@ yarn dev
 |   |   |-- layout.tsx
 |   |   `-- page.tsx
 |   |-- components/
-|   |   |-- LineContainer.tsx
+|   |   |-- Line.tsx
 |   |   `-- Wordle.tsx
 |   `-- globals.css
 |-- package.json
