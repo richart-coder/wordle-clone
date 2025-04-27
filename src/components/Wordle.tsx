@@ -1,38 +1,49 @@
 "use client";
 import Line from "./Line";
 import { toast } from "react-toastify";
+import { pipe } from "../lib/util";
 import { useEffect, useReducer, useState, useRef } from "react";
+import {
+  validateGuess,
+  processGuess,
+  randomPick,
+} from "../features/wordle/logic";
+import { Guess, GuessResult } from "../features/wordle/domain";
 
 const API_URL = "/api/words";
 
 export default function WordleGame() {
-  const [guess, dispatch] = useReducer(guessReducer, initialGuessState);
+  const [guess, dispatch] = useReducer(guessReducer, initialGuess);
   const [gameStatus, setGameStatus] = useState<"playing" | "won" | "lost">(
     "playing"
   );
-  const [word, setWord] = useState("");
+
   const [guessResults, setGuessResults] = useState<GuessResult[]>([]);
-  const validWords = useRef<ValidWords | null>(null);
+  const wordle = useRef<{ words: string[]; word: string }>(null);
 
   useEffect(() => {
     if (gameStatus !== "playing") return;
     const handleType = (event: KeyboardEvent) => {
       if (event.key === "Enter") {
         try {
-          if (!validWords.current) throw new Error("Word list not loaded yet");
-          const { result, nextGameStatus, isWin } = pipe(
-            ([guessState, validWords]: [GuessState, ValidWords]) =>
-              validateGuessSubmission(guessState, validWords),
-            (guessObj: GuessState) =>
-              processValidatedGuess({ guessObj, targetWord: word })
-          )([guess, validWords.current]);
+          if (!wordle.current?.words)
+            throw new Error("Word list not loaded yet");
 
-          setGuessResults((prev) => [...prev, result]);
-          setGameStatus(nextGameStatus);
+          const {
+            result: guessResult,
+            isWin,
+            gameStatus,
+          } = pipe(
+            (guess: Guess) => validateGuess(guess, wordle.current!.words),
+            (validatedGuess: Guess) =>
+              processGuess(validatedGuess, wordle.current!.word)
+          )(guess);
+
+          setGuessResults((prev) => [...prev, guessResult]);
+          setGameStatus(gameStatus);
           if (isWin) {
             toast.success("Congratulations! 🎉");
           }
-
           dispatch({ type: "SUBMIT_GUESS" });
         } catch (error: any) {
           toast.error(error.message || "An unknown error occurred");
@@ -43,21 +54,17 @@ export default function WordleGame() {
         dispatch({ type: "ADD_LETTER", payload: event.key });
       }
     };
-
     window.addEventListener("keydown", handleType);
     return () => window.removeEventListener("keydown", handleType);
-  }, [guess, word, gameStatus]);
+  }, [guess, gameStatus]);
 
   useEffect(() => {
     fetch(API_URL)
       .then((res) => res.json())
       .then((words: string[]) => {
-        const randomWord = words[Math.floor(Math.random() * words.length)];
-        setWord(randomWord);
-        validWords.current = {
-          has(word: string) {
-            return words.includes(word);
-          },
+        wordle.current = {
+          words,
+          word: randomPick(words),
         };
       })
       .catch((error) => {
@@ -72,7 +79,7 @@ export default function WordleGame() {
 
       {gameStatus === "lost" && (
         <div className="my-2 p-3 text-white bg-red-600 rounded shadow-md font-bold">
-          Game Over! The word was: {word}
+          Game Over! The word was: {wordle.current?.word}
         </div>
       )}
 
@@ -105,74 +112,19 @@ const isLetter = (key: string): boolean => {
   return /^[a-zA-Z]$/.test(key);
 };
 
-export type LetterStatus = "correct" | "present" | "absent" | "empty";
-
-interface GuessResult {
-  value: string;
-  letterStatuses: LetterStatus[];
-}
-
-const getGuessStatuses = (guess: string, word: string): LetterStatus[] => {
-  const upperGuess = guess.toUpperCase();
-  const upperWord = word.toUpperCase();
-
-  if (upperGuess.length !== 5 || upperWord.length !== 5) {
-    return Array(5).fill("empty");
-  }
-
-  const wordLetters = upperWord.split("");
-  const guessLetters = upperGuess.split("");
-  const statuses: LetterStatus[] = Array(5).fill("absent");
-  const wordLetterUsage = wordLetters.map(() => false);
-
-  for (let i = 0; i < 5; i++) {
-    if (guessLetters[i] === wordLetters[i]) {
-      statuses[i] = "correct";
-      wordLetterUsage[i] = true;
-    }
-  }
-
-  for (let i = 0; i < 5; i++) {
-    if (statuses[i] === "correct") continue;
-    let foundMatchIndex = -1;
-    for (let j = 0; j < 5; j++) {
-      if (!wordLetterUsage[j] && guessLetters[i] === wordLetters[j]) {
-        foundMatchIndex = j;
-        break;
-      }
-    }
-    if (foundMatchIndex !== -1) {
-      statuses[i] = "present";
-      wordLetterUsage[foundMatchIndex] = true;
-    }
-  }
-  for (let i = 0; i < 5; i++) {
-    if (!guessLetters[i]) {
-      statuses[i] = "empty";
-    }
-  }
-  return statuses;
-};
-
-interface GuessState {
-  value: string;
-  isCompleted: boolean;
-  attempts: number;
-}
-
 type Action =
   | { type: "ADD_LETTER"; payload: string }
   | { type: "REMOVE_LETTER" }
   | { type: "SUBMIT_GUESS" }
   | { type: "CLEAR_WORD" };
 
-const initialGuessState: GuessState = {
+const initialGuess: Guess = {
   value: "",
   isCompleted: false,
   attempts: 0,
 };
 
-const guessReducer = (state: GuessState, action: Action): GuessState => {
+const guessReducer = (state: Guess, action: Action): Guess => {
   switch (action.type) {
     case "ADD_LETTER":
       if (state.value.length >= 5) return state;
@@ -199,67 +151,7 @@ const guessReducer = (state: GuessState, action: Action): GuessState => {
         isCompleted: false,
       };
 
-    case "CLEAR_WORD":
-      return {
-        ...state,
-        value: "",
-        isCompleted: false,
-      };
-
     default:
       return state;
   }
 };
-
-interface ValidWords {
-  has: (word: string) => boolean;
-}
-
-const validateGuessSubmission = (
-  guessState: GuessState,
-  validWords: ValidWords
-): GuessState => {
-  if (!guessState.isCompleted) {
-    throw new Error("Not enough letters");
-  }
-  const upperGuess = guessState.value.toUpperCase();
-  if (!validWords.has(upperGuess)) {
-    throw new Error("Not in word list");
-  }
-  return { ...guessState, value: upperGuess };
-};
-
-interface ProcessedGuess {
-  result: GuessResult;
-  nextGameStatus: "playing" | "won" | "lost";
-  isWin: boolean;
-}
-
-const processValidatedGuess = ({
-  guessObj,
-  targetWord,
-}: {
-  guessObj: GuessState;
-  targetWord: string;
-}): ProcessedGuess => {
-  const calculatedStatuses = getGuessStatuses(guessObj.value, targetWord);
-  const isWin = calculatedStatuses.every((status) => status === "correct");
-
-  let nextGameStatus: "playing" | "won" | "lost" = "playing";
-  if (isWin) {
-    nextGameStatus = "won";
-  } else if (guessObj.attempts === 5) {
-    nextGameStatus = "lost";
-  }
-
-  return {
-    result: { value: guessObj.value, letterStatuses: calculatedStatuses },
-    nextGameStatus: nextGameStatus,
-    isWin: isWin,
-  };
-};
-
-const pipe =
-  (...fns: Function[]) =>
-  (arg: any) =>
-    fns.reduce((v, f) => f(v), arg);

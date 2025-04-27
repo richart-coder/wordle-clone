@@ -1,4 +1,4 @@
-import { LetterStatus } from "./Wordle";
+import { LetterStatus } from "../features/wordle/domain";
 
 interface LineProps {
   guess: string;
