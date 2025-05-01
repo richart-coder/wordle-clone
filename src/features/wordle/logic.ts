@@ -20,7 +20,6 @@ export function processGuess(
   word: string
 ): {
   result: GuessResult;
-  isWin: boolean;
   gameStatus: "playing" | "won" | "lost";
 } {
   const letterStatuses = getGuessStatuses(guess.value, word);
@@ -33,7 +32,6 @@ export function processGuess(
   }
   return {
     result: { value: guess.value, letterStatuses },
-    isWin,
     gameStatus,
   };
 }

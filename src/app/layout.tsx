@@ -1,6 +1,3 @@
-"use client";
-
-import { ToastContainer } from "react-toastify";
 import "./globals.css";
 
 export default function RootLayout({
@@ -10,14 +7,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
-        {children}
-        <ToastContainer
-          position="top-center"
-          autoClose={500}
-          hideProgressBar={true}
-        />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

@@ -1,47 +1,69 @@
 "use client";
 import Line from "./Line";
 import { toast } from "react-toastify";
-import { pipe } from "../lib/util";
-import { useEffect, useReducer, useState, useRef } from "react";
+
+import { useEffect, useReducer, useRef } from "react";
 import {
   validateGuess,
   processGuess,
   randomPick,
 } from "../features/wordle/logic";
+
 import { Guess, GuessResult } from "../features/wordle/domain";
 
 const API_URL = "/api/words";
+interface Game {
+  status: "playing" | "won" | "lost";
+  results: GuessResult[];
+}
+const initialGame: Game = {
+  status: "playing",
+  results: [],
+};
+
+const gameReducer = (
+  state: Game,
+  action: {
+    type: "PROCESS";
+    payload: {
+      guess: Guess;
+      word?: string;
+    };
+  }
+) => {
+  const { type, payload } = action;
+  switch (type) {
+    case "PROCESS": {
+      const { result, gameStatus } = processGuess(payload.guess, payload.word!);
+      return {
+        status: gameStatus,
+        results: [...state.results, result],
+      };
+    }
+    default:
+      return state;
+  }
+};
 
 export default function WordleGame() {
   const [guess, dispatch] = useReducer(guessReducer, initialGuess);
-  const [gameStatus, setGameStatus] = useState<"playing" | "won" | "lost">(
-    "playing"
-  );
+  const [game, gameDispatch] = useReducer(gameReducer, initialGame);
 
-  const [guessResults, setGuessResults] = useState<GuessResult[]>([]);
   const wordle = useRef<{ words: string[]; word: string }>(null);
 
   useEffect(() => {
-    if (gameStatus !== "playing") return;
+    if (game.status !== "playing") return;
     const handleType = (event: KeyboardEvent) => {
       if (event.key === "Enter") {
         try {
-          if (!wordle.current?.words)
-            throw new Error("Word list not loaded yet");
+          validateGuess(guess, wordle.current!.words);
 
-          const {
-            result: guessResult,
-            isWin,
-            gameStatus,
-          } = pipe(
-            (guess: Guess) => validateGuess(guess, wordle.current!.words),
-            (validatedGuess: Guess) =>
-              processGuess(validatedGuess, wordle.current!.word)
-          )(guess);
+          gameDispatch({
+            type: "PROCESS",
+            payload: { guess, word: wordle.current!.word },
+          });
 
-          setGuessResults((prev) => [...prev, guessResult]);
-          setGameStatus(gameStatus);
-          if (isWin) {
+          if (game.status === "won") {
             toast.success("Congratulations! 🎉");
           }
           dispatch({ type: "SUBMIT_GUESS" });
@@ -56,7 +78,7 @@ export default function WordleGame() {
     };
     window.addEventListener("keydown", handleType);
     return () => window.removeEventListener("keydown", handleType);
-  }, [guess, gameStatus]);
+  }, [guess, game.status]);
 
   useEffect(() => {
     fetch(API_URL)
@@ -68,8 +90,7 @@ export default function WordleGame() {
         };
       })
       .catch((error) => {
-        console.error("Error fetching word list:", error);
-        toast.error("Failed to load word list", { autoClose: 1500 });
+        toast.error(error);
       });
   }, []);
 
@@ -77,7 +98,7 @@ export default function WordleGame() {
     <div className="flex flex-col items-center gap-4 relative">
       <h1 className="text-2xl font-bold">Wordle</h1>
 
-      {gameStatus === "lost" && (
+      {game.status === "lost" && (
         <div className="my-2 p-3 text-white bg-red-600 rounded shadow-md font-bold">
           Game Over! The word was: {wordle.current?.word}
         </div>
@@ -86,20 +107,14 @@ export default function WordleGame() {
       <div className="grid grid-rows-6 gap-2">
         {Array.from({ length: 6 }).map((_, index) => {
           const isCurrentRow = index === guess.attempts;
-          const previousGuessResult = guessResults[index];
+          const result = game.results[index];
 
           return (
             <Line
               key={index}
-              guess={
-                isCurrentRow ? guess.value : previousGuessResult?.value ?? ""
-              }
-              statuses={
-                isCurrentRow
-                  ? null
-                  : previousGuessResult?.letterStatuses ?? null
-              }
-              isActive={isCurrentRow && gameStatus === "playing"}
+              guess={isCurrentRow ? guess.value : result?.value ?? ""}
+              statuses={isCurrentRow ? null : result?.letterStatuses ?? null}
+              isActive={isCurrentRow && game.status === "playing"}
             />
           );
         })}
@@ -112,19 +127,20 @@ const isLetter = (key: string): boolean => {
   return /^[a-zA-Z]$/.test(key);
 };
 
-type Action =
-  | { type: "ADD_LETTER"; payload: string }
-  | { type: "REMOVE_LETTER" }
-  | { type: "SUBMIT_GUESS" }
-  | { type: "CLEAR_WORD" };
-
 const initialGuess: Guess = {
   value: "",
   isCompleted: false,
   attempts: 0,
 };
 
-const guessReducer = (state: Guess, action: Action): Guess => {
+const guessReducer = (
+  state: Guess,
+  action:
+    | { type: "ADD_LETTER"; payload: string }
+    | { type: "REMOVE_LETTER" }
+    | { type: "SUBMIT_GUESS" }
+    | { type: "CLEAR_WORD" }
+): Guess => {
   switch (action.type) {
     case "ADD_LETTER":
       if (state.value.length >= 5) return state;
