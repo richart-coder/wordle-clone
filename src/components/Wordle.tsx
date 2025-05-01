@@ -46,7 +46,7 @@ const gameReducer = (
 };
 
 export default function WordleGame() {
-  const [guess, dispatch] = useReducer(guessReducer, initialGuess);
+  const [guess, guessDispatch] = useReducer(guessReducer, initialGuess);
   const [game, gameDispatch] = useReducer(gameReducer, initialGame);
 
   const wordle = useRef<{ words: string[]; word: string }>(null);
@@ -66,14 +66,14 @@ export default function WordleGame() {
           if (game.status === "won") {
             toast.success("Congratulations! 🎉");
           }
-          dispatch({ type: "SUBMIT_GUESS" });
+          guessDispatch({ type: "SUBMIT_GUESS" });
         } catch (error: any) {
           toast.error(error.message || "An unknown error occurred");
         }
       } else if (event.key === "Backspace") {
-        dispatch({ type: "REMOVE_LETTER" });
+        guessDispatch({ type: "REMOVE_LETTER" });
       } else if (isLetter(event.key)) {
-        dispatch({ type: "ADD_LETTER", payload: event.key });
+        guessDispatch({ type: "ADD_LETTER", payload: event.key });
       }
     };
     window.addEventListener("keydown", handleType);
