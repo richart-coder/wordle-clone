@@ -139,7 +139,6 @@ const guessReducer = (
     | { type: "ADD_LETTER"; payload: string }
     | { type: "REMOVE_LETTER" }
     | { type: "SUBMIT_GUESS" }
-    | { type: "CLEAR_WORD" }
 ): Guess => {
   switch (action.type) {
     case "ADD_LETTER":
