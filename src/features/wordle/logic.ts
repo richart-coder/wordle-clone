@@ -1,14 +1,12 @@
 import { Guess, LetterStatus, GuessResult } from "./domain";
 
-export function validateGuess(guess: Guess, words: string[]): Guess {
+export function assertGuess(guess: Guess, words: string[]) {
   if (!guess.isCompleted) {
     throw new Error("Not enough letters");
   }
-  const upperGuess = guess.value.toUpperCase();
-  if (!words.includes(upperGuess)) {
+  if (!words.includes(guess.value.toUpperCase())) {
     throw new Error("Not in word list");
   }
-  return { ...guess, value: upperGuess };
 }
 
 export function randomPick(words: string[]): string {

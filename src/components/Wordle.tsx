@@ -3,7 +3,7 @@ import Line from "./Line";
 import { toast } from "react-toastify";
 import { useEffect, useReducer, useRef } from "react";
 import {
-  validateGuess,
+  assertGuess,
   processGuess,
   randomPick,
 } from "../features/wordle/logic";
@@ -72,7 +72,7 @@ export default function WordleGame() {
     const handleType = (event: KeyboardEvent) => {
       if (event.key === "Enter") {
         try {
-          validateGuess(guess, wordle.current!.words);
+          assertGuess(guess, wordle.current!.words);
 
           gameDispatch({
             type: "PROCESS",
