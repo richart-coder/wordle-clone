@@ -25,7 +25,7 @@
 - **框架 (Framework):** [Next.js](https://nextjs.org/) (React 框架)
 - **語言 (Language):** [TypeScript](https://www.typescriptlang.org/)
 - **樣式 (Styling):** [Tailwind CSS](https://tailwindcss.com/)
-- **狀態管理 (State Management):** React Hooks (`useState`, `useReducer`, `useRef`)
+- **狀態管理 (State Management):** React Hooks (`useReducer`, `useRef`)
 - **通知 (Notifications):** [react-toastify](https://fkhadra.github.io/react-toastify/)
 
 ## 開始使用 (Getting Started)
@@ -75,22 +75,23 @@ yarn dev
 ## 專案結構 (Project Structure) (簡化)
 
 ```
-/
-|-- public/
 |-- src/
 |   |-- app/
-|   |   |-- api/
-|   |   |   `-- words/
-|   |   |       `-- route.ts
+|   |   |-- api/words/
+|   |   |   `-- route.ts
+|   |   |-- favicon.ico
+|   |   |-- globals.css
 |   |   |-- layout.tsx
 |   |   `-- page.tsx
 |   |-- components/
 |   |   |-- Line.tsx
 |   |   `-- Wordle.tsx
-|   `-- globals.css
-|-- package.json
-|-- tailwind.config.ts
-`-- README.md
+|   |-- features/wordle/
+|   |   |-- context.ts
+|   |   |-- domain.ts
+|   |   `-- logic.ts
+|   `-- lib/
+|       `-- util.ts
 ```
 
 ## 了解更多 (Learn More)
