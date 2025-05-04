@@ -1,7 +1,6 @@
 "use client";
 import Line from "./Line";
 import { toast } from "react-toastify";
-
 import { useEffect, useReducer, useRef } from "react";
 import {
   validateGuess,
@@ -19,6 +18,15 @@ interface Game {
 const initialGame: Game = {
   status: "playing",
   results: [],
+};
+const gameStatusHandlers = {
+  won: (message: string) => {
+    toast.info(message);
+  },
+  lost: (message: string) => {
+    toast.info(message, { autoClose: 10000 });
+  },
+  playing: () => {},
 };
 
 const gameReducer = (
@@ -49,8 +57,16 @@ export default function WordleGame() {
   const [guess, guessDispatch] = useReducer(guessReducer, initialGuess);
   const [game, gameDispatch] = useReducer(gameReducer, initialGame);
 
-  const wordle = useRef<{ words: string[]; word: string }>(null);
-
+  const wordle = useRef<{
+    words: string[];
+    word: string;
+    messages: { won: string; lost: string };
+  }>(null);
+  useEffect(() => {
+    gameStatusHandlers[game.status](
+      wordle.current?.messages[game.status as "won" | "lost"] as string
+    );
+  }, [game]);
   useEffect(() => {
     if (game.status !== "playing") return;
     const handleType = (event: KeyboardEvent) => {
@@ -63,9 +79,6 @@ export default function WordleGame() {
             payload: { guess, word: wordle.current!.word },
           });
 
-          if (game.status === "won") {
-            toast.success("Congratulations! 🎉");
-          }
           guessDispatch({ type: "SUBMIT_GUESS" });
         } catch (error: any) {
           toast.error(error.message || "An unknown error occurred");
@@ -84,9 +97,14 @@ export default function WordleGame() {
     fetch(API_URL)
       .then((res) => res.json())
       .then((words: string[]) => {
+        const word = randomPick(words);
         wordle.current = {
           words,
-          word: randomPick(words),
+          word,
+          messages: {
+            won: "Congratulations! 🎉",
+            lost: `Game Over! The word was: ${word}`,
+          },
         };
       })
       .catch((error) => {
@@ -97,13 +115,6 @@ export default function WordleGame() {
   return (
     <div className="flex flex-col items-center gap-4 relative">
       <h1 className="text-2xl font-bold">Wordle</h1>
-
-      {game.status === "lost" && (
-        <div className="my-2 p-3 text-white bg-red-600 rounded shadow-md font-bold">
-          Game Over! The word was: {wordle.current?.word}
-        </div>
-      )}
-
       <div className="grid grid-rows-6 gap-2">
         {Array.from({ length: 6 }).map((_, index) => {
           const isCurrentRow = index === guess.attempts;
