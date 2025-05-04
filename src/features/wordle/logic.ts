@@ -1,37 +1,7 @@
-import { Guess, LetterStatus, GuessResult } from "./domain";
-
-export function assertGuess(guess: Guess, words: string[]) {
-  if (!guess.isCompleted) {
-    throw new Error("Not enough letters");
-  }
-  if (!words.includes(guess.value.toUpperCase())) {
-    throw new Error("Not in word list");
-  }
-}
+import { LetterStatus } from "./domain";
 
 export function randomPick(words: string[]): string {
   return words[Math.floor(Math.random() * words.length)];
-}
-
-export function processGuess(
-  guess: Guess,
-  word: string
-): {
-  result: GuessResult;
-  gameStatus: "playing" | "won" | "lost";
-} {
-  const letterStatuses = getGuessStatuses(guess.value, word);
-  const isWin = letterStatuses.every((status) => status === "correct");
-  let gameStatus: "playing" | "won" | "lost" = "playing";
-  if (isWin) {
-    gameStatus = "won";
-  } else if (guess.attempts === 5) {
-    gameStatus = "lost";
-  }
-  return {
-    result: { value: guess.value, letterStatuses },
-    gameStatus,
-  };
 }
 
 export function getGuessStatuses(guess: string, word: string): LetterStatus[] {
